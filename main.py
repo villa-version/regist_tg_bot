@@ -1,5 +1,6 @@
 import telebot as tg
 import sqlite3
+from pprint import pprint
 import json
 
 
@@ -25,14 +26,18 @@ def start(message):
     markup.add(tg.types.InlineKeyboardButton('Нет', callback_data='negative'))
     bot_text = 'Здравствуйте {name}. Вы уже зарегистрировались здесь?'.format(name=message.from_user.first_name)
     bot.send_message(message.chat.id, bot_text, reply_markup=markup)
+
+
+@bot.message_handler(commands=['db'])
+def check_db(message):
     db = sqlite3.connect('users_data.db')
     cur = db.cursor()
     cur.execute('SELECT * FROM users')
     text = cur.fetchall()
+    pprint(text)
     cur.close()
     db.close()
-    print(text)
-    # bot.send_message(message.chat.id, json.load(text))
+    #bot.send_message(message.chat.id, json.load(text))
 
 
 @bot.message_handler()
@@ -43,24 +48,14 @@ def register(message):
         login, password = message.text.split(' ')
         db = sqlite3.connect('users_data.db')
         cur = db.cursor()
-        sql = 'INSERT INTO users (login, password) VALUES (?, ?)'
-        cur.execute(sql, (login, password))
+        req = f"INSERT INTO users(login, password) VALUES('{login}','{password}')"
+        cur.execute(req)
+        db.commit()
         cur.close()
         db.close()
         reg_allow = False
         #except Exception:
         #    bot.send_message(message.chat.id, f'Что то пошло не так! Введите еще раз!')
-
-
-@bot.message_handler(commands=['db'])
-def check_db(message):
-    db = sqlite3.connect('users_data.db')
-    cur = db.cursor()
-    cur.execute('SELECT * FROM users')
-    text = cur.fetchall()
-    cur.close()
-    db.close()
-    bot.send_message(message.chat.id, json.load(text))
 
 
 @bot.callback_query_handler(func=lambda callback: True)
